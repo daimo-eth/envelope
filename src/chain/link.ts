@@ -27,13 +27,14 @@ const peanutAbi = [
   {
     inputs: [
       { name: "_tokenAddress", type: "address" },
-      { name: "_amount", type: "uint256" },
-      { name: "_pubKey20", type: "address" },
       { name: "_contractType", type: "uint8" },
+      { name: "_amount", type: "uint256" },
+      { name: "_tokenId", type: "uint256" },
+      { name: "_pubKey20", type: "address" },
     ],
     name: "makeDeposit",
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function",
   },
 ];
@@ -64,7 +65,13 @@ export async function createLinkCall({
   const calldata = encodeFunctionData({
     abi: peanutAbi,
     functionName: "makeDeposit",
-    args: [OP_DAI_ADDRESS, amountWei, keyAccount.address, 0], // 0 = ERC20
+    args: [
+      OP_DAI_ADDRESS,
+      1, // ERC-20
+      amountWei,
+      0, // always 0 when using ERC-20
+      keyAccount.address,
+    ],
   });
 
   return { address, calldata, password };
