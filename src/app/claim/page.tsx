@@ -6,6 +6,7 @@ import peanut from "@squirrel-labs/peanut-sdk";
 import { Dancing_Script } from "next/font/google";
 import { createPublicClient, http, isAddress } from "viem";
 import { mainnet } from "viem/chains";
+import Link from "next/link";
 
 const dancingScript = Dancing_Script({ subsets: ["latin"] });
 
@@ -16,7 +17,8 @@ const client = createPublicClient({
 });
 
 export default function ClaimPage() {
-  const [linkDetails, setLinkDetails] = useState<PeanutGetLinkDetailsResponse | null>();
+  const [linkDetails, setLinkDetails] =
+    useState<PeanutGetLinkDetailsResponse | null>();
   const [claiming, setClaiming] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,10 +49,12 @@ export default function ClaimPage() {
       // Check if it's a valid Ethereum address
       if (isAddress(input)) {
         finalAddress = input;
-      } 
+      }
       // Check if it's an ENS name
       else if (input.endsWith(".eth")) {
-        const resolvedEns = await client.getEnsAddress({ name: input.toLowerCase() });
+        const resolvedEns = await client.getEnsAddress({
+          name: input.toLowerCase(),
+        });
         if (resolvedEns) {
           finalAddress = resolvedEns;
         } else {
@@ -70,7 +74,11 @@ export default function ClaimPage() {
       setAddressValidating(false);
       return true;
     } catch (e) {
-      setError(`Address validation failed: ${e instanceof Error ? e.message : String(e)}`);
+      setError(
+        `Address validation failed: ${
+          e instanceof Error ? e.message : String(e)
+        }`
+      );
       setAddressValidating(false);
       return false;
     }
@@ -78,14 +86,14 @@ export default function ClaimPage() {
 
   const handleSubmitAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!recipientAddress.trim()) {
       setError("Please enter a valid address");
       return;
     }
 
     const isValid = await validateAndResolveAddress(recipientAddress);
-    
+
     if (isValid) {
       setAddressEntered(true);
     }
@@ -125,7 +133,7 @@ export default function ClaimPage() {
       <MainLayout>
         <div className="w-full max-w-md bg-[#fff9f0] rounded-2xl shadow-lg p-8 relative border border-amber-100">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGZpbHRlciBpZD0iYSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIuNzUiIG51bU9jdGF2ZXM9IjIiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9IjAuMDUiLz48L3N2Zz4=')] opacity-50 rounded-2xl pointer-events-none"></div>
-          
+
           <div className="relative text-center space-y-6 py-6">
             <div className="mb-6 relative">
               <div className="w-24 h-16 mx-auto relative opacity-60">
@@ -133,13 +141,20 @@ export default function ClaimPage() {
                 <div className="absolute top-0 left-0 right-0 h-8 bg-amber-100 border-2 border-dashed border-amber-600 origin-top transform rotate-45 translate-y-1"></div>
               </div>
             </div>
-            
-            <h2 className="text-2xl font-bold text-amber-900">Invalid Surprise Link</h2>
-            <p className="text-amber-700">This link appears to be invalid or expired.</p>
-            
-            <a href="/" className="inline-block mt-6 py-3 px-6 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+
+            <h2 className="text-2xl font-bold text-amber-900">
+              Invalid Surprise Link
+            </h2>
+            <p className="text-amber-700">
+              This link appears to be invalid or expired.
+            </p>
+
+            <Link
+              href="/"
+              className="inline-block mt-6 py-3 px-6 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+            >
               Create a New Surprise
-            </a>
+            </Link>
           </div>
         </div>
       </MainLayout>
@@ -161,7 +176,7 @@ export default function ClaimPage() {
       <MainLayout>
         <div className="w-full max-w-md bg-[#fff9f0] rounded-2xl shadow-lg p-8 relative border border-amber-100">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGZpbHRlciBpZD0iYSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIuNzUiIG51bU9jdGF2ZXM9IjIiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9IjAuMDUiLz48L3N2Zz4=')] opacity-50 rounded-2xl pointer-events-none"></div>
-          
+
           <div className="relative text-center space-y-6 py-6">
             <div className="mb-6 relative">
               <div className="w-24 h-16 mx-auto relative opacity-70">
@@ -169,13 +184,20 @@ export default function ClaimPage() {
                 <div className="absolute top-0 left-0 right-0 h-8 bg-amber-100 border-2 border-amber-600 origin-top transform rotate-180"></div>
               </div>
             </div>
-            
-            <h2 className="text-2xl font-bold text-amber-900">Surprise Already Claimed</h2>
-            <p className="text-amber-700">This surprise envelope has already been opened.</p>
-            
-            <a href="/" className="inline-block mt-6 py-3 px-6 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+
+            <h2 className="text-2xl font-bold text-amber-900">
+              Surprise Already Claimed
+            </h2>
+            <p className="text-amber-700">
+              This surprise envelope has already been opened.
+            </p>
+
+            <Link
+              href="/"
+              className="inline-block mt-6 py-3 px-6 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+            >
               Create a New Surprise
-            </a>
+            </Link>
           </div>
         </div>
       </MainLayout>
@@ -223,9 +245,10 @@ export default function ClaimPage() {
                 </div>
                 <div className="text-amber-800 text-lg">is yours!</div>
               </div>
-              
+
               <div className="text-sm text-amber-700 mt-2">
-                Sent to: {displayAddress.slice(0, 8)}...{displayAddress.slice(-6)}
+                Sent to: {displayAddress.slice(0, 8)}...
+                {displayAddress.slice(-6)}
               </div>
 
               <a
@@ -250,7 +273,7 @@ export default function ClaimPage() {
                   <p className="text-amber-700">
                     Enter your wallet address or ENS name to claim the surprise
                   </p>
-                  
+
                   <form onSubmit={handleSubmitAddress} className="space-y-4">
                     <div className="flex flex-col">
                       <input
@@ -262,21 +285,41 @@ export default function ClaimPage() {
                         required
                       />
                     </div>
-                    
-                    <button 
+
+                    <button
                       type="submit"
                       disabled={addressValidating}
-                      className={`w-full py-3 px-4 rounded-lg font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center justify-center ${addressValidating ? 'opacity-70 cursor-wait' : ''}`}
+                      className={`w-full py-3 px-4 rounded-lg font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center justify-center ${
+                        addressValidating ? "opacity-70 cursor-wait" : ""
+                      }`}
                     >
                       {addressValidating ? (
                         <>
-                          <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <svg
+                            className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
                           </svg>
                           Validating...
                         </>
-                      ) : 'Continue to Claim'}
+                      ) : (
+                        "Continue to Claim"
+                      )}
                     </button>
                   </form>
                 </div>
@@ -286,12 +329,13 @@ export default function ClaimPage() {
                   <p className="text-amber-700">
                     Scratch below to claim your gift!
                   </p>
-                  
+
                   <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
                     <p className="text-sm text-amber-700">
-                      Sending to: {displayAddress.slice(0, 8)}...{displayAddress.slice(-6)}
+                      Sending to: {displayAddress.slice(0, 8)}...
+                      {displayAddress.slice(-6)}
                     </p>
-                    <button 
+                    <button
                       onClick={() => setAddressEntered(false)}
                       className="text-xs text-amber-600 underline mt-1"
                     >
@@ -366,12 +410,14 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 p-4">
       <div className="relative mb-8">
-        <h1 className={`${dancingScript.className} text-5xl font-bold text-center text-amber-900 relative transform -rotate-2 drop-shadow-lg`}>
+        <h1
+          className={`${dancingScript.className} text-5xl font-bold text-center text-amber-900 relative transform -rotate-2 drop-shadow-lg`}
+        >
           Surprise Envelope
         </h1>
         <div className="w-48 h-1 bg-amber-300 mx-auto rounded-full transform rotate-2 mt-2 shadow-sm"></div>
       </div>
-      
+
       {children}
     </div>
   );
