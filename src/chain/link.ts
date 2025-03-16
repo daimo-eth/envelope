@@ -4,8 +4,6 @@ import {
   Hex,
   http,
   parseUnits,
-  createWalletClient,
-  encodeAbiParameters,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { optimism } from "viem/chains";
@@ -19,8 +17,6 @@ export const DAI_DECIMALS = 18;
 export const PEANUT_CONTRACT = "0xb75B6e4007795e84a0f9Db97EB19C6Fc13c84A5E"; // Optimism, Peanut v4.3
 export const DEPOSIT_EVENT_SIG =
   "0x6cfb6f205ed755f233c83bfe7f03aee5e1d993139ce47aead6d4fe25f7ec3066" as const;
-export const PEANUT_SALT =
-  "0xa7f5f920025df92f95662ccfb788a1d2d21b4525aae814a71591e2754be55beb";
 
 export interface LinkCall {
   address: Hex;
@@ -141,71 +137,12 @@ export async function getLinkFromDeposit({
   console.log(`PAY: found deposit index: ${depositIdx}`);
 
   // Create link
-  const host = process.env.NEXT_PUBLIC_HOST || 'https://surprise-envelope.vercel.app';
+  const host =
+    process.env.NEXT_PUBLIC_HOST || "https://surprise-envelope.vercel.app";
   const link = `${host}/claim?c=${OP_CHAIN_ID}&v=v4.3&i=${depositIdx}#p=${password}`;
   console.log(`PAY: claim link created: ${link}`);
 
   return link;
-}
-
-export async function createClaimTx({
-  index,
-  password,
-  recipientAddress,
-}: {
-  index: number;
-  password: string;
-  recipientAddress: Hex;
-}): Promise<{ calldata: Hex; address: Hex }> {
-  // Recreate the private key from the password
-  const privateKey = keccak256(toHex(password));
-  const keyAccount = privateKeyToAccount(privateKey);
-
-  // Generate the message hash according to Peanut's verification logic
-  const messageHash = keccak256(
-    encodeAbiParameters(
-      [
-        { type: "bytes32" },
-        { type: "uint256" },
-        { type: "address" },
-        { type: "uint256" },
-        { type: "address" },
-        { type: "bytes" },
-      ],
-      [
-        PEANUT_SALT as Hex,
-        BigInt(OP_CHAIN_ID),
-        PEANUT_CONTRACT as Hex,
-        BigInt(index),
-        recipientAddress,
-        "0x", // empty extraData
-      ]
-    )
-  );
-
-  // Create wallet client for signing
-  const walletClient = createWalletClient({
-    account: keyAccount,
-    chain: optimism,
-    transport,
-  });
-
-  // Sign the message
-  const signature = await walletClient.signMessage({
-    message: { raw: messageHash },
-  });
-
-  // Create transaction calldata
-  const calldata = encodeFunctionData({
-    abi: peanutAbi,
-    functionName: "withdrawDeposit",
-    args: [BigInt(index), recipientAddress, signature as Hex],
-  });
-
-  return {
-    calldata,
-    address: PEANUT_CONTRACT as Hex,
-  };
 }
 
 export function parsePeanutLink(url: string): {
