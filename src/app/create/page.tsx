@@ -34,7 +34,7 @@ export default function CreatePage() {
         });
         setPeanutLink(link);
       } catch (error) {
-        console.error("failed to generate peanut link:", error);
+        console.error("failed to generate link:", error);
       } finally {
         setLoading(false);
       }
@@ -70,7 +70,7 @@ export default function CreatePage() {
             view transaction: {txHash.slice(0, 10)}...
           </a>
           
-          {loading && <p>generating peanut link...</p>}
+          {loading && <p>generating link...</p>}
           
           {peanutLink && (
             <div>

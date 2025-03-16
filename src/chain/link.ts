@@ -140,9 +140,10 @@ export async function getLinkFromDeposit({
   const depositIdx = Number(depositLog.topics[1]);
   console.log(`PAY: found deposit index: ${depositIdx}`);
 
-  // Create link. TODO: add domain
-  const link = `/claim?c=${OP_CHAIN_ID}&v=v4.3&i=${depositIdx}#p=${password}`;
-  console.log(`PAY: peanut claim link created: ${link}`);
+  // Create link
+  const host = process.env.NEXT_PUBLIC_HOST || 'https://surprise-envelope.vercel.app';
+  const link = `${host}/claim?c=${OP_CHAIN_ID}&v=v4.3&i=${depositIdx}#p=${password}`;
+  console.log(`PAY: claim link created: ${link}`);
 
   return link;
 }
