@@ -4,6 +4,8 @@ import {
   Hex,
   http,
   parseUnits,
+  createWalletClient,
+  encodeAbiParameters,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { optimism } from "viem/chains";
@@ -17,6 +19,8 @@ export const DAI_DECIMALS = 18;
 export const PEANUT_CONTRACT = "0xb75B6e4007795e84a0f9Db97EB19C6Fc13c84A5E"; // Optimism, Peanut v4.3
 export const DEPOSIT_EVENT_SIG =
   "0x6cfb6f205ed755f233c83bfe7f03aee5e1d993139ce47aead6d4fe25f7ec3066" as const;
+export const PEANUT_SALT =
+  "0xa7f5f920025df92f95662ccfb788a1d2d21b4525aae814a71591e2754be55beb";
 
 export interface LinkCall {
   address: Hex;
@@ -38,6 +42,28 @@ const peanutAbi = [
     outputs: [],
     stateMutability: "payable",
     type: "function",
+  },
+  {
+    inputs: [
+      { name: "_index", type: "uint256" },
+      { name: "_recipientAddress", type: "address" },
+      { name: "_signature", type: "bytes" },
+    ],
+    name: "withdrawDeposit",
+    outputs: [{ type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "_index", type: "uint256" },
+      { indexed: true, name: "_contractType", type: "uint8" },
+      { indexed: false, name: "_amount", type: "uint256" },
+      { indexed: true, name: "_senderAddress", type: "address" },
+    ],
+    name: "DepositEvent",
+    type: "event",
   },
 ];
 
@@ -114,9 +140,96 @@ export async function getLinkFromDeposit({
   const depositIdx = Number(depositLog.topics[1]);
   console.log(`PAY: found deposit index: ${depositIdx}`);
 
-  // Create link
-  const link = `https://peanut.to/claim?c=${OP_CHAIN_ID}&v=v4.3&i=${depositIdx}#p=${password}`;
+  // Create link. TODO: add domain
+  const link = `/claim?c=${OP_CHAIN_ID}&v=v4.3&i=${depositIdx}#p=${password}`;
   console.log(`PAY: peanut claim link created: ${link}`);
 
   return link;
+}
+
+export async function createClaimTx({
+  index,
+  password,
+  recipientAddress,
+}: {
+  index: number;
+  password: string;
+  recipientAddress: Hex;
+}): Promise<{ calldata: Hex; address: Hex }> {
+  // Recreate the private key from the password
+  const privateKey = keccak256(toHex(password));
+  const keyAccount = privateKeyToAccount(privateKey);
+
+  // Generate the message hash according to Peanut's verification logic
+  const messageHash = keccak256(
+    encodeAbiParameters(
+      [
+        { type: "bytes32" },
+        { type: "uint256" },
+        { type: "address" },
+        { type: "uint256" },
+        { type: "address" },
+        { type: "bytes" },
+      ],
+      [
+        PEANUT_SALT as Hex,
+        BigInt(OP_CHAIN_ID),
+        PEANUT_CONTRACT as Hex,
+        BigInt(index),
+        recipientAddress,
+        "0x", // empty extraData
+      ]
+    )
+  );
+
+  // Create wallet client for signing
+  const walletClient = createWalletClient({
+    account: keyAccount,
+    chain: optimism,
+    transport,
+  });
+
+  // Sign the message
+  const signature = await walletClient.signMessage({
+    message: { raw: messageHash },
+  });
+
+  // Create transaction calldata
+  const calldata = encodeFunctionData({
+    abi: peanutAbi,
+    functionName: "withdrawDeposit",
+    args: [BigInt(index), recipientAddress, signature as Hex],
+  });
+
+  return {
+    calldata,
+    address: PEANUT_CONTRACT as Hex,
+  };
+}
+
+export function parsePeanutLink(url: string): {
+  chainId: number;
+  index: number;
+  password: string;
+} | null {
+  try {
+    const parsedUrl = new URL(url);
+
+    // Extract query parameters
+    const chainId = Number(parsedUrl.searchParams.get("c"));
+    const index = Number(parsedUrl.searchParams.get("i"));
+
+    // Extract password from hash part (#p=password)
+    const hashParts = parsedUrl.hash.substring(1).split("=");
+    const password = hashParts.length > 1 ? hashParts[1] : "";
+
+    if (!chainId || isNaN(chainId) || !index || isNaN(index) || !password) {
+      return null;
+    }
+
+    return { chainId, index, password };
+  } catch (e) {
+    console.error("failed to parse peanut link:", e);
+    return null;
+  }
 }
