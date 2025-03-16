@@ -3,6 +3,7 @@ import {
   encodeFunctionData,
   Hex,
   http,
+  parseAbiItem,
   parseUnits,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -16,7 +17,7 @@ export const OP_DAI_ADDRESS = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
 export const DAI_DECIMALS = 18;
 export const PEANUT_CONTRACT = "0xb75B6e4007795e84a0f9Db97EB19C6Fc13c84A5E"; // Optimism, Peanut v4.3
 export const DEPOSIT_EVENT_SIG =
-  "0x6cfb6f205ed755f233c83bfe7f03aee5e1d993139ce47aead6d4fe25f7ec3066" as const;
+  "event DepositEvent(uint256 indexed _index, uint8 indexed _contractType, uint256 _amount, address indexed _senderAddress)" as const;
 
 export interface LinkCall {
   address: Hex;
@@ -38,28 +39,6 @@ const peanutAbi = [
     outputs: [],
     stateMutability: "payable",
     type: "function",
-  },
-  {
-    inputs: [
-      { name: "_index", type: "uint256" },
-      { name: "_recipientAddress", type: "address" },
-      { name: "_signature", type: "bytes" },
-    ],
-    name: "withdrawDeposit",
-    outputs: [{ type: "bool" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: "_index", type: "uint256" },
-      { indexed: true, name: "_contractType", type: "uint8" },
-      { indexed: false, name: "_amount", type: "uint256" },
-      { indexed: true, name: "_senderAddress", type: "address" },
-    ],
-    name: "DepositEvent",
-    type: "event",
   },
 ];
 
@@ -119,15 +98,15 @@ export async function getLinkFromDeposit({
 
   // Get deposit index from logs
   const logs = await publicClient.getLogs({
+    strict: true,
+    event: parseAbiItem(DEPOSIT_EVENT_SIG),
     address: PEANUT_CONTRACT as `0x${string}`,
     fromBlock: depositReceipt.blockNumber,
     toBlock: depositReceipt.blockNumber,
   });
 
   // Find the Deposit event log by matching the event signature in the first topic
-  const depositLog = logs.find(
-    (log) => log.topics && log.topics[0] === DEPOSIT_EVENT_SIG
-  );
+  const depositLog = logs.find((log) => log.transactionHash === txHash);
 
   if (!depositLog || !depositLog.topics || depositLog.topics.length < 2) {
     throw new Error("deposit event not found in transaction logs");
