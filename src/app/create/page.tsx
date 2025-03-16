@@ -28,8 +28,8 @@ export default function CreatePage() {
       <DaimoPayButton
         appId="pay-demo"
         toChain={OP_CHAIN_ID}
-        toUnits="10.00"
         toToken={OP_DAI_ADDRESS}
+        toUnits="10.00"
         toAddress={linkData.address}
         toCallData={linkData.calldata}
         onPaymentCompleted={(e) => {
