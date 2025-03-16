@@ -1,103 +1,122 @@
-import Image from "next/image";
+"use client";
+
+import { useState, FormEvent } from "react";
+import { Dancing_Script } from "next/font/google";
+
+const dancingScript = Dancing_Script({ subsets: ["latin"] });
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [contactType, setContactType] = useState<"email" | "phone">("email");
+  const [contactValue, setContactValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    submitForm();
+  };
+
+  const submitForm = () => {
+    console.log("Button clicked!");
+    setIsSubmitting(true);
+    // TODO: Handle form submission
+    console.log("Form submitted with:", { contactType, contactValue });
+    // Reset submission state after 2 seconds (simulating submission)
+    setTimeout(() => setIsSubmitting(false), 2000);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 p-4">
+      <div className="relative mb-8">
+        <h1 className={`${dancingScript.className} text-5xl font-bold text-center text-amber-900 relative transform -rotate-2 drop-shadow-lg`}>
+          Surprise Envelope
+        </h1>
+        <div className="w-48 h-1 bg-amber-300 mx-auto rounded-full transform rotate-2 mt-2 shadow-sm"></div>
+      </div>
+
+      <div className="w-full max-w-md bg-[#fff9f0] rounded-2xl shadow-lg p-8 relative border border-amber-100">
+        {/* Paper texture overlay */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGZpbHRlciBpZD0iYSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIuNzUiIG51bU9jdGF2ZXM9IjIiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9IjAuMDUiLz48L3N2Zz4=')] opacity-50 rounded-2xl pointer-events-none"></div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6 relative mt-8">
+          {/* Toggle between email and phone */}
+          <div className="flex bg-amber-50/50 rounded-lg p-1 border border-amber-200">
+            <button
+              type="button"
+              onClick={() => setContactType("email")}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                contactType === "email"
+                  ? "bg-white shadow-sm text-amber-900"
+                  : "text-amber-700 hover:text-amber-900"
+              }`}
+            >
+              Email
+            </button>
+            <button
+              type="button"
+              onClick={() => setContactType("phone")}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                contactType === "phone"
+                  ? "bg-white shadow-sm text-amber-900"
+                  : "text-amber-700 hover:text-amber-900"
+              }`}
+            >
+              Phone
+            </button>
+          </div>
+
+          {/* Input field */}
+          <div>
+            <label
+              htmlFor={contactType === "email" ? "email" : "phone"}
+              className="block text-sm font-medium text-amber-800 mb-2"
+            >
+              {contactType === "email" ? "Email Address" : "Phone Number"}
+            </label>
+            <input
+              type={contactType === "email" ? "email" : "tel"}
+              id={contactType === "email" ? "email" : "phone"}
+              value={contactValue}
+              onChange={(e) => setContactValue(e.target.value)}
+              placeholder={
+                contactType === "email"
+                  ? "Enter email address"
+                  : "Enter phone number"
+              }
+              className="w-full px-4 py-3 rounded-lg border border-amber-200 bg-white/80 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors text-amber-900 placeholder-amber-400"
+              required
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          </div>
+
+          {/* Submit button with envelope animation */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={submitForm}
+              disabled={isSubmitting}
+              className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-500 relative overflow-hidden
+                ${isSubmitting 
+                  ? 'bg-amber-100 text-transparent transform scale-95' 
+                  : 'bg-amber-600 text-white hover:bg-amber-700'}`}
+            >
+                Fill the envelope
+            </button>
+            
+            {/* Envelope animation */}
+            <div className={`absolute inset-0 transition-all duration-500 ${isSubmitting ? 'opacity-100' : 'opacity-0'}`}>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-12 h-8 relative">
+                  {/* Envelope body */}
+                  <div className="absolute inset-0 border-2 border-amber-600 bg-amber-50"></div>
+                  {/* Envelope flap */}
+                  <div className={`absolute top-0 left-0 right-0 h-4 bg-amber-100 border-2 border-amber-600 transition-transform duration-500 origin-top
+                    ${isSubmitting ? 'rotate-0' : '-rotate-180'}`}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
