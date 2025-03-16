@@ -39,7 +39,7 @@ export const ScratchToReveal: React.FC<ScratchToRevealProps> = ({
         0,
         0,
         canvas.width,
-        canvas.height,
+        canvas.height
       );
       gradient.addColorStop(0, gradientColors[0]);
       gradient.addColorStop(0.5, gradientColors[1]);
@@ -88,6 +88,7 @@ export const ScratchToReveal: React.FC<ScratchToRevealProps> = ({
       document.removeEventListener("touchend", handleDocumentTouchEnd);
       document.removeEventListener("touchcancel", handleDocumentTouchEnd);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isScratching]);
 
   const handleMouseDown = () => setIsScratching(true);

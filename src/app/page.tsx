@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
-import { Dancing_Script } from "next/font/google";
-import { DaimoPayButton, DaimoPayCompletedEvent } from "@daimo/pay";
-import { createLinkCall, getLinkFromDeposit } from "@/chain/link";
-import { Hex } from "viem";
-import { OP_CHAIN_ID, OP_DAI_ADDRESS, LinkCall } from "@/chain/link";
+import { createLinkCall, getLinkFromDeposit, LinkCall } from "@/chain/link";
 import { SendButton } from "@/components/SendButton";
+import { DaimoPayCompletedEvent } from "@daimo/pay";
+import { Dancing_Script } from "next/font/google";
+import { FormEvent, useEffect, useState } from "react";
+import { Hex } from "viem";
 
 const dancingScript = Dancing_Script({ subsets: ["latin"] });
 
@@ -37,13 +36,13 @@ export default function Home() {
     const hash = e.txHash as Hex;
     setTxHash(hash);
     setIsSubmitting(true);
-    
+
     if (linkData) {
       setLoading(true);
       try {
         const link = await getLinkFromDeposit({
           txHash: hash,
-          password: linkData.password
+          password: linkData.password,
         });
         setPeanutLink(link);
         setShowSuccessView(true);
@@ -68,17 +67,17 @@ export default function Home() {
 
   // Generate sharing links based on contact type and value
   const getShareLink = () => {
-    if (!peanutLink || !contactValue) return '';
-    
+    if (!peanutLink || !contactValue) return "";
+
     const message = `Here's your surprise gift! Claim it here: ${peanutLink}`;
     const encodedMessage = encodeURIComponent(message);
-    
+
     if (contactType === "email") {
       const subject = encodeURIComponent("A Surprise Gift For You!");
       return `mailto:${contactValue}?subject=${subject}&body=${encodedMessage}`;
     } else {
       // Format phone number - remove any non-digit characters
-      const formattedPhone = contactValue.replace(/\D/g, '');
+      const formattedPhone = contactValue.replace(/\D/g, "");
       return `sms:${formattedPhone}?body=${encodedMessage}`;
     }
   };
@@ -86,7 +85,9 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 p-4">
       <div className="relative mb-8">
-        <h1 className={`${dancingScript.className} text-5xl font-bold text-center text-amber-900 relative transform -rotate-2 drop-shadow-lg`}>
+        <h1
+          className={`${dancingScript.className} text-5xl font-bold text-center text-amber-900 relative transform -rotate-2 drop-shadow-lg`}
+        >
           Surprise Envelope
         </h1>
         <div className="w-48 h-1 bg-amber-300 mx-auto rounded-full transform rotate-2 mt-2 shadow-sm"></div>
@@ -95,14 +96,25 @@ export default function Home() {
       {showSuccessView && peanutLink ? (
         <div className="w-full max-w-md bg-[#fff9f0] rounded-2xl shadow-lg p-8 relative border border-amber-100 min-h-[400px] flex flex-col">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGZpbHRlciBpZD0iYSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIuNzUiIG51bU9jdGF2ZXM9IjIiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9IjAuMDUiLz48L3N2Zz4=')] opacity-50 rounded-2xl pointer-events-none"></div>
-          
+
           <div className="relative flex-1 flex flex-col items-center justify-center text-center space-y-6">
             <div className="mb-4 relative">
               <div className="w-24 h-16 mx-auto relative">
                 <div className="absolute inset-0 border-2 border-amber-600 bg-amber-50 flex items-center justify-center overflow-hidden">
                   <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -112,32 +124,45 @@ export default function Home() {
                 ${selectedAmount} sent successfully!
               </div>
             </div>
-            
-            <h2 className="text-2xl font-bold text-amber-900">Your Surprise is Ready!</h2>
-            
+
+            <h2 className="text-2xl font-bold text-amber-900">
+              Your Surprise is Ready!
+            </h2>
+
             {/* Contact Information */}
             <div className="flex items-center justify-center space-x-2">
               <span className="text-amber-700">Sending to:</span>
               <span className="font-medium text-amber-900">{contactValue}</span>
             </div>
-            
+
             {/* Share button - Automatically open mailto: or sms: */}
             <a
               href={getShareLink()}
               className="w-full py-3 px-4 rounded-lg font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center justify-center"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
               </svg>
               Send {contactType === "email" ? "Email" : "SMS"} Now
             </a>
-            
+
             {/* Link display with copy button */}
             <div className="w-full bg-white p-4 rounded-lg border border-amber-200 relative group">
               <div className="text-amber-900 font-mono text-sm break-all">
                 {peanutLink}
               </div>
-              <button 
+              <button
                 onClick={() => {
                   navigator.clipboard.writeText(peanutLink);
                   alert("Link copied to clipboard!");
@@ -145,12 +170,23 @@ export default function Home() {
                 className="absolute top-2 right-2 p-1 rounded-full bg-amber-100 hover:bg-amber-200 transition-colors"
                 title="Copy to clipboard"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-amber-700"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             {/* View transaction link */}
             <a
               href={`https://optimistic.etherscan.io/tx/${txHash}`}
@@ -161,14 +197,25 @@ export default function Home() {
               View transaction details
             </a>
           </div>
-          
+
           <div className="mt-8">
             <button
               onClick={handleReset}
               className="w-full py-3 px-4 rounded-lg font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors flex items-center justify-center"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 17l-5-5m0 0l5-5m-5 5h12"
+                />
               </svg>
               Create Another Surprise
             </button>
@@ -177,7 +224,7 @@ export default function Home() {
       ) : (
         <div className="w-full max-w-md bg-[#fff9f0] rounded-2xl shadow-lg p-8 relative border border-amber-100">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGZpbHRlciBpZD0iYSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIuNzUiIG51bU9jdGF2ZXM9IjIiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9IjAuMDUiLz48L3N2Zz4=')] opacity-50 rounded-2xl pointer-events-none"></div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6 relative mt-8">
             <div className="flex bg-amber-50/50 rounded-lg p-1 border border-amber-200">
               <button
@@ -248,18 +295,22 @@ export default function Home() {
               </div>
             </div>
 
-            <SendButton 
+            <SendButton
               linkData={linkData}
               isSubmitting={isSubmitting}
               selectedAmount={selectedAmount}
               onPaymentCompleted={handlePaymentCompleted}
             />
-            
+
             {loading && !showSuccessView && (
               <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200 text-center">
                 <div className="animate-pulse">
-                  <p className="text-amber-800 font-medium">Creating your surprise link...</p>
-                  <p className="text-amber-600 text-sm mt-1">This may take a moment. Please wait.</p>
+                  <p className="text-amber-800 font-medium">
+                    Creating your surprise link...
+                  </p>
+                  <p className="text-amber-600 text-sm mt-1">
+                    This may take a moment. Please wait.
+                  </p>
                 </div>
               </div>
             )}
