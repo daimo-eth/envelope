@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { Dancing_Script } from "next/font/google";
+import { DaimoPayButton, DaimoPayCompletedEvent } from "@daimo/pay";
+import { createLinkCall, getLinkFromDeposit } from "@/chain/link";
+import { Hex } from "viem";
+import { OP_CHAIN_ID, OP_DAI_ADDRESS, LinkCall } from "@/chain/link";
+import { SendButton } from "@/components/SendButton";
 
 const dancingScript = Dancing_Script({ subsets: ["latin"] });
 
@@ -9,19 +14,73 @@ export default function Home() {
   const [contactType, setContactType] = useState<"email" | "phone">("email");
   const [contactValue, setContactValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedAmount, setSelectedAmount] = useState<number>(5);
+  const [txHash, setTxHash] = useState<Hex>();
+  const [linkData, setLinkData] = useState<LinkCall>();
+  const [peanutLink, setPeanutLink] = useState<string>();
+  const [loading, setLoading] = useState(false);
+  const [showSuccessView, setShowSuccessView] = useState(false);
+
+  // Generate link data when component mounts or amount changes
+  useEffect(() => {
+    createLinkCall({ usd: selectedAmount })
+      .then((data) => setLinkData(data))
+      .catch(console.error);
+  }, [selectedAmount]);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    submitForm();
   };
 
-  const submitForm = () => {
-    console.log("Button clicked!");
+  const handlePaymentCompleted = async (e: DaimoPayCompletedEvent) => {
+    console.log("payment completed:", e);
+    const hash = e.txHash as Hex;
+    setTxHash(hash);
     setIsSubmitting(true);
-    // TODO: Handle form submission
-    console.log("Form submitted with:", { contactType, contactValue });
-    // Reset submission state after 2 seconds (simulating submission)
-    setTimeout(() => setIsSubmitting(false), 2000);
+    
+    if (linkData) {
+      setLoading(true);
+      try {
+        const link = await getLinkFromDeposit({
+          txHash: hash,
+          password: linkData.password
+        });
+        setPeanutLink(link);
+        setShowSuccessView(true);
+      } catch (error) {
+        console.error("failed to generate peanut link:", error);
+      } finally {
+        setLoading(false);
+        setTimeout(() => setIsSubmitting(false), 2000);
+      }
+    }
+  };
+
+  const handleReset = () => {
+    setShowSuccessView(false);
+    setPeanutLink(undefined);
+    setTxHash(undefined);
+    setContactValue("");
+    createLinkCall({ usd: selectedAmount })
+      .then((data) => setLinkData(data))
+      .catch(console.error);
+  };
+
+  // Generate sharing links based on contact type and value
+  const getShareLink = () => {
+    if (!peanutLink || !contactValue) return '';
+    
+    const message = `Here's your surprise gift! Claim it here: ${peanutLink}`;
+    const encodedMessage = encodeURIComponent(message);
+    
+    if (contactType === "email") {
+      const subject = encodeURIComponent("A Surprise Gift For You!");
+      return `mailto:${contactValue}?subject=${subject}&body=${encodedMessage}`;
+    } else {
+      // Format phone number - remove any non-digit characters
+      const formattedPhone = contactValue.replace(/\D/g, '');
+      return `sms:${formattedPhone}?body=${encodedMessage}`;
+    }
   };
 
   return (
@@ -33,90 +92,180 @@ export default function Home() {
         <div className="w-48 h-1 bg-amber-300 mx-auto rounded-full transform rotate-2 mt-2 shadow-sm"></div>
       </div>
 
-      <div className="w-full max-w-md bg-[#fff9f0] rounded-2xl shadow-lg p-8 relative border border-amber-100">
-        {/* Paper texture overlay */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGZpbHRlciBpZD0iYSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIuNzUiIG51bU9jdGF2ZXM9IjIiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9IjAuMDUiLz48L3N2Zz4=')] opacity-50 rounded-2xl pointer-events-none"></div>
-        
-        <form onSubmit={handleSubmit} className="space-y-6 relative mt-8">
-          {/* Toggle between email and phone */}
-          <div className="flex bg-amber-50/50 rounded-lg p-1 border border-amber-200">
-            <button
-              type="button"
-              onClick={() => setContactType("email")}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-                contactType === "email"
-                  ? "bg-white shadow-sm text-amber-900"
-                  : "text-amber-700 hover:text-amber-900"
-              }`}
-            >
-              Email
-            </button>
-            <button
-              type="button"
-              onClick={() => setContactType("phone")}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-                contactType === "phone"
-                  ? "bg-white shadow-sm text-amber-900"
-                  : "text-amber-700 hover:text-amber-900"
-              }`}
-            >
-              Phone
-            </button>
-          </div>
-
-          {/* Input field */}
-          <div>
-            <label
-              htmlFor={contactType === "email" ? "email" : "phone"}
-              className="block text-sm font-medium text-amber-800 mb-2"
-            >
-              {contactType === "email" ? "Email Address" : "Phone Number"}
-            </label>
-            <input
-              type={contactType === "email" ? "email" : "tel"}
-              id={contactType === "email" ? "email" : "phone"}
-              value={contactValue}
-              onChange={(e) => setContactValue(e.target.value)}
-              placeholder={
-                contactType === "email"
-                  ? "Enter email address"
-                  : "Enter phone number"
-              }
-              className="w-full px-4 py-3 rounded-lg border border-amber-200 bg-white/80 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors text-amber-900 placeholder-amber-400"
-              required
-            />
-          </div>
-
-          {/* Submit button with envelope animation */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={submitForm}
-              disabled={isSubmitting}
-              className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-500 relative overflow-hidden
-                ${isSubmitting 
-                  ? 'bg-amber-100 text-transparent transform scale-95' 
-                  : 'bg-amber-600 text-white hover:bg-amber-700'}`}
-            >
-                Fill the envelope
-            </button>
-            
-            {/* Envelope animation */}
-            <div className={`absolute inset-0 transition-all duration-500 ${isSubmitting ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-8 relative">
-                  {/* Envelope body */}
-                  <div className="absolute inset-0 border-2 border-amber-600 bg-amber-50"></div>
-                  {/* Envelope flap */}
-                  <div className={`absolute top-0 left-0 right-0 h-4 bg-amber-100 border-2 border-amber-600 transition-transform duration-500 origin-top
-                    ${isSubmitting ? 'rotate-0' : '-rotate-180'}`}
-                  ></div>
+      {showSuccessView && peanutLink ? (
+        <div className="w-full max-w-md bg-[#fff9f0] rounded-2xl shadow-lg p-8 relative border border-amber-100 min-h-[400px] flex flex-col">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGZpbHRlciBpZD0iYSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIuNzUiIG51bU9jdGF2ZXM9IjIiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9IjAuMDUiLz48L3N2Zz4=')] opacity-50 rounded-2xl pointer-events-none"></div>
+          
+          <div className="relative flex-1 flex flex-col items-center justify-center text-center space-y-6">
+            <div className="mb-4 relative">
+              <div className="w-24 h-16 mx-auto relative">
+                <div className="absolute inset-0 border-2 border-amber-600 bg-amber-50 flex items-center justify-center overflow-hidden">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
                 </div>
+                <div className="absolute top-0 left-0 right-0 h-8 bg-amber-100 border-2 border-amber-600 origin-top rotate-0"></div>
+              </div>
+              <div className="mt-2 text-amber-800 font-medium">
+                ${selectedAmount} sent successfully!
               </div>
             </div>
+            
+            <h2 className="text-2xl font-bold text-amber-900">Your Surprise is Ready!</h2>
+            
+            {/* Contact Information */}
+            <div className="flex items-center justify-center space-x-2">
+              <span className="text-amber-700">Sending to:</span>
+              <span className="font-medium text-amber-900">{contactValue}</span>
+            </div>
+            
+            {/* Share button - Automatically open mailto: or sms: */}
+            <a
+              href={getShareLink()}
+              className="w-full py-3 px-4 rounded-lg font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center justify-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+              Send {contactType === "email" ? "Email" : "SMS"} Now
+            </a>
+            
+            {/* Link display with copy button */}
+            <div className="w-full bg-white p-4 rounded-lg border border-amber-200 relative group">
+              <div className="text-amber-900 font-mono text-sm break-all">
+                {peanutLink}
+              </div>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(peanutLink);
+                  alert("Link copied to clipboard!");
+                }}
+                className="absolute top-2 right-2 p-1 rounded-full bg-amber-100 hover:bg-amber-200 transition-colors"
+                title="Copy to clipboard"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* View transaction link */}
+            <a
+              href={`https://optimistic.etherscan.io/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-600 hover:text-amber-800 text-sm underline"
+            >
+              View transaction details
+            </a>
           </div>
-        </form>
-      </div>
+          
+          <div className="mt-8">
+            <button
+              onClick={handleReset}
+              className="w-full py-3 px-4 rounded-lg font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors flex items-center justify-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+              </svg>
+              Create Another Surprise
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full max-w-md bg-[#fff9f0] rounded-2xl shadow-lg p-8 relative border border-amber-100">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGZpbHRlciBpZD0iYSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIuNzUiIG51bU9jdGF2ZXM9IjIiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9IjAuMDUiLz48L3N2Zz4=')] opacity-50 rounded-2xl pointer-events-none"></div>
+          
+          <form onSubmit={handleSubmit} className="space-y-6 relative mt-8">
+            <div className="flex bg-amber-50/50 rounded-lg p-1 border border-amber-200">
+              <button
+                type="button"
+                onClick={() => setContactType("email")}
+                className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                  contactType === "email"
+                    ? "bg-white shadow-sm text-amber-900"
+                    : "text-amber-700 hover:text-amber-900"
+                }`}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => setContactType("phone")}
+                className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                  contactType === "phone"
+                    ? "bg-white shadow-sm text-amber-900"
+                    : "text-amber-700 hover:text-amber-900"
+                }`}
+              >
+                Phone
+              </button>
+            </div>
+
+            <div>
+              <label
+                htmlFor={contactType === "email" ? "email" : "phone"}
+                className="block text-sm font-medium text-amber-800 mb-2"
+              >
+                {contactType === "email" ? "Email Address" : "Phone Number"}
+              </label>
+              <input
+                type={contactType === "email" ? "email" : "tel"}
+                id={contactType === "email" ? "email" : "phone"}
+                value={contactValue}
+                onChange={(e) => setContactValue(e.target.value)}
+                placeholder={
+                  contactType === "email"
+                    ? "Enter email address"
+                    : "Enter phone number"
+                }
+                className="w-full px-4 py-3 rounded-lg border border-amber-200 bg-white/80 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors text-amber-900 placeholder-amber-400"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-amber-800 mb-2">
+                Select Amount
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 5, 10].map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => setSelectedAmount(amount)}
+                    className={`py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      selectedAmount === amount
+                        ? "bg-amber-600 text-white shadow-sm"
+                        : "bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100"
+                    }`}
+                  >
+                    ${amount}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <SendButton 
+              linkData={linkData}
+              isSubmitting={isSubmitting}
+              selectedAmount={selectedAmount}
+              onPaymentCompleted={handlePaymentCompleted}
+            />
+            
+            {loading && !showSuccessView && (
+              <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200 text-center">
+                <div className="animate-pulse">
+                  <p className="text-amber-800 font-medium">Creating your surprise link...</p>
+                  <p className="text-amber-600 text-sm mt-1">This may take a moment. Please wait.</p>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+      )}
     </div>
   );
 }

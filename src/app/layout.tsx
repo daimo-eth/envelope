@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "./provider";
+import { Providers } from "./Providers";
 import { ReactNode } from "react";
 
 export const metadata: Metadata = {
