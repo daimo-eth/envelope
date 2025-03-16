@@ -15,6 +15,8 @@ export const OP_CHAIN_ID = 10; // Optimism mainnet
 export const OP_DAI_ADDRESS = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
 export const DAI_DECIMALS = 18;
 export const PEANUT_CONTRACT = "0xb75B6e4007795e84a0f9Db97EB19C6Fc13c84A5E"; // Optimism, Peanut v4.3
+export const DEPOSIT_EVENT_SIG =
+  "0x6cfb6f205ed755f233c83bfe7f03aee5e1d993139ce47aead6d4fe25f7ec3066" as const;
 
 export interface LinkCall {
   address: Hex;
@@ -100,8 +102,17 @@ export async function getLinkFromDeposit({
     toBlock: depositReceipt.blockNumber,
   });
 
-  // Assuming the second log is the DepositEvent
-  const depositIdx = Number(logs[1].topics[1]);
+  // Find the Deposit event log by matching the event signature in the first topic
+  const depositLog = logs.find(
+    (log) => log.topics && log.topics[0] === DEPOSIT_EVENT_SIG
+  );
+
+  if (!depositLog || !depositLog.topics || depositLog.topics.length < 2) {
+    throw new Error("deposit event not found in transaction logs");
+  }
+
+  const depositIdx = Number(depositLog.topics[1]);
+  console.log(`PAY: found deposit index: ${depositIdx}`);
 
   // Create link
   const link = `https://peanut.to/claim?c=${OP_CHAIN_ID}&v=v4.3&i=${depositIdx}#p=${password}`;
