@@ -10,11 +10,17 @@ import { optimism } from "viem/chains";
 import { keccak256, toHex } from "viem/utils";
 
 // Constants
-const RPC_URL = "https://mainnet.optimism.io";
-const CHAIN_ID = 10; // Optimism mainnet
-const DAI_ADDRESS = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
-const DAI_DECIMALS = 18;
-const PEANUT_CONTRACT = "0xb75B6e4007795e84a0f9Db97EB19C6Fc13c84A5E"; // Optimism, Peanut v4.3
+export const OP_RPC_URL = "https://mainnet.optimism.io";
+export const OP_CHAIN_ID = 10; // Optimism mainnet
+export const OP_DAI_ADDRESS = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
+export const DAI_DECIMALS = 18;
+export const PEANUT_CONTRACT = "0xb75B6e4007795e84a0f9Db97EB19C6Fc13c84A5E"; // Optimism, Peanut v4.3
+
+export interface LinkCall {
+  address: Hex;
+  calldata: Hex;
+  password: string;
+}
 
 // ABI snippets
 const peanutAbi = [
@@ -33,14 +39,14 @@ const peanutAbi = [
 ];
 
 // Setup transport and clients
-const transport = http(RPC_URL);
+const transport = http(OP_RPC_URL);
 const publicClient = createPublicClient({ chain: optimism, transport });
 
 export async function createLinkCall({
   usd,
 }: {
   usd: number;
-}): Promise<{ address: Hex; calldata: Hex; password: string }> {
+}): Promise<LinkCall> {
   // Generate password and hash
   const password = Array.from(crypto.getRandomValues(new Uint8Array(12)))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -58,7 +64,7 @@ export async function createLinkCall({
   const calldata = encodeFunctionData({
     abi: peanutAbi,
     functionName: "makeDeposit",
-    args: [DAI_ADDRESS, amountWei, keyAccount.address, 0], // 0 = ERC20
+    args: [OP_DAI_ADDRESS, amountWei, keyAccount.address, 0], // 0 = ERC20
   });
 
   return { address, calldata, password };
@@ -91,7 +97,7 @@ export async function getLinkFromDeposit({
   const depositIdx = Number(logs[1].topics[1]);
 
   // Create link
-  const link = `https://peanut.to/claim?c=${CHAIN_ID}&v=v4.3&i=${depositIdx}#p=${password}`;
+  const link = `https://peanut.to/claim?c=${OP_CHAIN_ID}&v=v4.3&i=${depositIdx}#p=${password}`;
   console.log(`PAY: peanut claim link created: ${link}`);
 
   return link;
