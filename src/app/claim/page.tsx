@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-// import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
-// import { Dancing_Script } from "next/font/google";
 import { ScratchToReveal } from "@/components/magicui/scratch-to-reveal";
 import peanut from "@squirrel-labs/peanut-sdk";
+import { formatUnits } from "viem";
+import { DAI_DECIMALS } from "@/chain/link";
 
 // const dancingScript = Dancing_Script({ subsets: ["latin"] });
 
@@ -30,8 +30,6 @@ export default function ClaimPage() {
         setLinkDetails(null);
       });
   }, []);
-  // For demo purposes, we'll display a fixed amount
-  const amount = 0.42;
 
   const handleClaim = async () => {
     if (!isConnected || !address) {
@@ -79,6 +77,8 @@ export default function ClaimPage() {
       </div>
     );
   }
+
+  const amount = Number(formatUnits(BigInt(linkDetails.tokenAmount), DAI_DECIMALS));
 
   return (
     <div className="w-full max-w-md bg-[#fff9f0] rounded-2xl shadow-lg p-8 relative border border-amber-100">
