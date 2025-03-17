@@ -19,6 +19,7 @@ export default function Home() {
   const [peanutLink, setPeanutLink] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [showSuccessView, setShowSuccessView] = useState(false);
+  const [canShare, setCanShare] = useState(false);
 
   // Generate link data when component mounts or amount changes
   useEffect(() => {
@@ -26,6 +27,11 @@ export default function Home() {
       .then((data) => setLinkData(data))
       .catch(console.error);
   }, [selectedAmount]);
+
+  // Check if the Web Share API is supported
+  useEffect(() => {
+    setCanShare(!!navigator.share);
+  }, []);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,6 +88,22 @@ export default function Home() {
     }
   };
 
+  // Handle native sharing
+  const handleShare = async () => {
+    if (!peanutLink) return;
+    
+    try {
+      await navigator.share({
+        title: 'Surprise Gift!',
+        text: 'Here\'s your surprise gift! Claim it here:',
+        url: peanutLink
+      });
+      console.log('Link shared successfully');
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 p-4">
       <div className="relative mb-8">
@@ -129,33 +151,40 @@ export default function Home() {
               Your Surprise is Ready!
             </h2>
 
-            {/* Contact Information */}
-            <div className="flex items-center justify-center space-x-2">
-              <span className="text-amber-700">Sending to:</span>
-              <span className="font-medium text-amber-900">{contactValue}</span>
-            </div>
+            {/* Only show contact info and send button if contact was provided */}
+            {contactValue ? (
+              <>
+                <div className="flex items-center justify-center space-x-2">
+                  <span className="text-amber-700">Sending to:</span>
+                  <span className="font-medium text-amber-900">{contactValue}</span>
+                </div>
 
-            {/* Share button - Automatically open mailto: or sms: */}
-            <a
-              href={getShareLink()}
-              className="w-full py-3 px-4 rounded-lg font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center justify-center"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-              </svg>
-              Send {contactType === "email" ? "Email" : "SMS"} Now
-            </a>
+                <a
+                  href={getShareLink()}
+                  className="w-full py-3 px-4 rounded-lg font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center justify-center"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    />
+                  </svg>
+                  Send {contactType === "email" ? "Email" : "SMS"} Now
+                </a>
+              </>
+            ) : (
+              <div className="mb-2 text-amber-700">
+                Share this link directly with the recipient
+              </div>
+            )}
 
             {/* Link display with copy button */}
             <div className="w-full bg-white p-4 rounded-lg border border-amber-200 relative group">
@@ -186,6 +215,16 @@ export default function Home() {
                 </svg>
               </button>
             </div>
+
+            {/* Native Share Button - moved under the link display */}
+            {canShare && (
+              <button
+                onClick={handleShare}
+                className="w-full py-3 px-4 rounded-lg font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center justify-center"
+              >
+                Share
+              </button>
+            )}
 
             {/* View transaction link */}
             <a
@@ -226,6 +265,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGZpbHRlciBpZD0iYSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIuNzUiIG51bU9jdGF2ZXM9IjIiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9IjAuMDUiLz48L3N2Zz4=')] opacity-50 rounded-2xl pointer-events-none"></div>
 
           <form onSubmit={handleSubmit} className="space-y-6 relative mt-8">
+            {/* Email/Phone toggle */}
             <div className="flex bg-amber-50/50 rounded-lg p-1 border border-amber-200">
               <button
                 type="button"
@@ -251,12 +291,14 @@ export default function Home() {
               </button>
             </div>
 
+            {/* Contact input - simplified optional field */}
             <div>
               <label
                 htmlFor={contactType === "email" ? "email" : "phone"}
                 className="block text-sm font-medium text-amber-800 mb-2"
               >
-                {contactType === "email" ? "Email Address" : "Phone Number"}
+                {contactType === "email" ? "Email Address" : "Phone Number"} 
+                <span className="text-amber-500 text-xs ml-1">(optional)</span>
               </label>
               <input
                 type={contactType === "email" ? "email" : "tel"}
@@ -269,8 +311,10 @@ export default function Home() {
                     : "Enter phone number"
                 }
                 className="w-full px-4 py-3 rounded-lg border border-amber-200 bg-white/80 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors text-amber-900 placeholder-amber-400"
-                required
               />
+              <p className="mt-1 text-xs text-amber-600">
+                Add a {contactType} to send the surprise link automatically.
+              </p>
             </div>
 
             <div className="mb-4">

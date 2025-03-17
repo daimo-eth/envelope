@@ -27,6 +27,20 @@ export default function ClaimPage() {
   const [addressValidating, setAddressValidating] = useState(false);
   const [resolvedAddress, setResolvedAddress] = useState("");
 
+  // Lock scrolling when component mounts
+  useEffect(() => {
+    // Save current body style
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    
+    // Prevent scrolling
+    document.body.style.overflow = 'hidden';
+    
+    // Restore scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   // Parse the link from URL
   useEffect(() => {
     const link = window.location.href;
@@ -405,9 +419,19 @@ export default function ClaimPage() {
   );
 }
 
-// Main layout component without RainbowKitProvider
+// Main layout component with better mobile centering
 function MainLayout({ children }: { children: React.ReactNode }) {
   return (
+    <div className="h-screen max-h-screen overflow-hidden flex flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 p-4">
+      <div className="flex flex-col items-center justify-center h-full max-w-md w-full">
+        <div className="mb-6 sm:mb-8">
+          <h1 className={`${dancingScript.className} text-5xl font-bold text-center text-amber-900 relative transform -rotate-2 drop-shadow-lg`}>
+            Surprise Envelope
+          </h1>
+          <div className="w-48 h-1 bg-amber-300 mx-auto rounded-full transform rotate-2 mt-2 shadow-sm"></div>
+        </div>
+        {children}
+      </div>
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 p-4">
       <div className="relative mb-8">
         <h1
